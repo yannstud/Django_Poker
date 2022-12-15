@@ -1,0 +1,168 @@
+{% extends "cards/header.html" %}
+{% block content %}
+
+	{% csrf_token %}
+	<div id="dealer_scope">
+		<h1>Room: </h1><h1 class="roomName"></h1>	
+		<div>
+			<h1 class="dealerName"></h1> 
+			<button class="dealercard1"></button>
+			<button class="dealercard2"></button>
+			<button class="dealercard3"></button>
+			<button class="dealercard4"></button>
+			<button class="dealercard5"></button>
+		</div>
+	</div>
+	<div id="scope">
+		<div class="player">
+			<h1 class="player_name"></h1>
+			<button class="card1"></button>
+			<button class="card2"></button>
+			<button class="user_enter" id="user_enter1">Enter Table</button>
+		</div>
+		<div class="player">
+			<h1 class="player_name"></h1>
+			<button class="card1"></button>
+			<button class="card2"></button>
+			<button class="user_enter" id="user_enter2">Enter Table</button>
+		</div>
+		<div class="player">
+			<h1 class="player_name"></h1>
+			<button class="card1"></button>
+			<button class="card2"></button>
+			<button class="user_enter" id="user_enter3">Enter Table</button>
+		</div>
+		<div class="player">
+			<h1 class="player_name"></h1>
+			<button class="card1"></button>
+			<button class="card2"></button>
+			<button class="user_enter" id="user_enter4">Enter Table</button>
+		</div>
+		<div class="player">
+			<h1 class="player_name"></h1>
+			<button class="card1"></button>
+			<button class="card2"></button>
+			<button class="user_enter" id="user_enter5">Enter Table</button>
+		</div>
+	</div>
+	
+
+	<div>
+		<input id="addme" type="button" value="Send">
+	</div>
+	{{ room_name|json_script:"room-name" }}
+
+	{% include 'cards/chat.html' %}
+	<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8=" crossorigin="anonymous"></script>
+	<script>
+		const roomName = JSON.parse(document.getElementById('room-name').textContent);
+		const gameSocket = new WebSocket(
+			'ws://'
+			+ window.location.host
+			+ '/ws/cards/'
+			+ roomName
+			+ '/'
+		);
+
+		gameSocket.onmessage = function(e) {
+			const data = JSON.parse(e.data);
+			if ("message" in data) {
+				document.querySelector('#chat-log').value += (data.user + ' say : '  + data.message + '\n');
+			} else if ("player_cards" in data && "player" in data && "player_button_id" in data) {
+				$('#'+data.player_button_id).prev().prev().prev().text(data.player)
+				$('#'+data.player_button_id).prev().prev().text(data.player_cards[0][0] + ' de ' + data.player_cards[0][1])
+				$('#'+data.player_button_id).prev().text(data.player_cards[1][0] + ' de ' + data.player_cards[1][1])
+				$('#'+data.player_button_id).hide()
+			} else if ("table_state" in data) {
+				if (data.table_state == '') {
+					$( "#dealer_scope" ).find('.dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
+					$( "#dealer_scope" ).find('.dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
+					$( "#dealer_scope" ).find('.dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+				} else if (data.table_state == 'flop') {
+					$( "#dealer_scope" ).find('.dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
+					$( "#dealer_scope" ).find('.dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
+					$( "#dealer_scope" ).find('.dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+					$( "#dealer_scope" ).find('.dealercard4').text(data.dealer_cards[3][0] + ' de ' + data.dealer_cards[3][1])
+				} else if (data.table_state == 'turn') {
+					$( "#dealer_scope" ).find('.dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
+					$( "#dealer_scope" ).find('.dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
+					$( "#dealer_scope" ).find('.dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+					$( "#dealer_scope" ).find('.dealercard4').text(data.dealer_cards[3][0] + ' de ' + data.dealer_cards[3][1])
+					$( "#dealer_scope" ).find('.dealercard5').text(data.dealer_cards[4][0] + ' de ' + data.dealer_cards[4][1])
+				} else if (data.table_state == 'river') {
+					for (button of data.buttons_id) {
+						$('#'+button).prev().prev().prev().text(data.player)
+						$('#'+button).prev().prev().text('')
+						$('#'+button).prev().text('')
+						$('#'+button).hide()
+					}
+					$( "#dealer_scope" ).find('.dealercard1').text('')
+					$( "#dealer_scope" ).find('.dealercard2').text('')
+					$( "#dealer_scope" ).find('.dealercard3').text('')
+					$( "#dealer_scope" ).find('.dealercard4').text('')
+					$( "#dealer_scope" ).find('.dealercard5').text('')
+				}
+			} else if ("button_id" in data) {
+				$('#'+data.button_id).text(data.player)
+			}
+		};
+	
+		gameSocket.onclose = function(e) {
+			console.error('Chat socket closed unexpectedly');
+		};
+	
+		document.querySelector('#chat-message-input').focus();
+		document.querySelector('#chat-message-input').onkeyup = function(e) {
+			if (e.keyCode === 13) {  // enter, return
+				document.querySelector('#chat-message-submit').click();
+			}
+		};
+	
+		document.querySelector('#chat-message-submit').onclick = function(e) {
+			const messageInputDom = document.querySelector('#chat-message-input');
+			const userInputDom = document.querySelector('#chat-message-user-name');
+			const message = messageInputDom.value;
+			const user = userInputDom.value;
+	
+			gameSocket.send(JSON.stringify({
+				'message': message,
+				'user': user
+			}));
+			messageInputDom.value = '';
+		};
+
+
+		$(document).ready(function(){
+			// Enter user to the table 
+			$( ".user_enter" ).click(function() {
+				username = $("#current_user").val()
+				button_id = $(this).attr('id')
+				console.log(button_id)
+				console.log(username)
+				gameSocket.send(JSON.stringify({
+					'addme': 'addme',
+					'username': username,
+					'button_id': button_id
+				}));
+			});
+			var time = 1;
+
+			var interval = setInterval(function() { 
+				if (time <= 40) { 
+					url = '/cards/' + roomName + '/'
+					CSRFtoken = $('input[name=csrfmiddlewaretoken]').val()
+					
+					gameSocket.send(JSON.stringify({
+						'deal': 'deal'
+					}));
+				  time++;
+			   }
+			   else { 
+				  clearInterval(interval);
+			   }
+			}, 5000);
+
+		});
+
+	</script>
+{% endblock %}

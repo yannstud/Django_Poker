@@ -1,0 +1,8 @@
+asgiref
+channels
+Django
+daphne
+django_static_jquery
+django_crispy_forms
+psycopg2
+channels_redis
