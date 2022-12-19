@@ -7,6 +7,7 @@ import random
 class GameTable(models.Model):
     name = models.CharField(max_length=255)
     state = models.CharField(max_length=255)
+    # chipsOnTable = models.IntegerField(null=True)
 
 class Deck(models.Model):
     suit = models.CharField(max_length = 30)
@@ -28,11 +29,15 @@ class Deck(models.Model):
 class Player(models.Model):
     name = models.CharField(max_length=255)
     button_id = models.CharField(max_length=255, null=True)
-    Card1 = models.ForeignKey(Deck, related_name='one', on_delete=models.CASCADE, null=True)
-    Card2 = models.ForeignKey(Deck, related_name='two', on_delete=models.CASCADE, null=True)
-    Card3 = models.ForeignKey(Deck, related_name='tree', on_delete=models.CASCADE, null=True)
-    Card4 = models.ForeignKey(Deck, related_name='fourth', on_delete=models.CASCADE, null=True)
-    Card5 = models.ForeignKey(Deck, related_name='five', on_delete=models.CASCADE, null=True)
+    id_seat = models.IntegerField()
+    checked = models.BooleanField(default=False)
+    playing = models.BooleanField(default=False)
+    card1 = models.ForeignKey(Deck, related_name='one', on_delete=models.CASCADE, null=True)
+    card2 = models.ForeignKey(Deck, related_name='two', on_delete=models.CASCADE, null=True)
+    card3 = models.ForeignKey(Deck, related_name='tree', on_delete=models.CASCADE, null=True)
+    card4 = models.ForeignKey(Deck, related_name='fourth', on_delete=models.CASCADE, null=True)
+    card5 = models.ForeignKey(Deck, related_name='five', on_delete=models.CASCADE, null=True)
+    Chips = models.IntegerField(default=1000)
     GameTable = models.ForeignKey(GameTable, on_delete=models.CASCADE)
 
 class UserSessions(object):

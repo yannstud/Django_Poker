@@ -1,15 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponseNotFound
-
-
-
-# # Creation du deck + shuffle
-# myTable = GameTable('room_name')
-# myDeck = Deck()
-# myDeck.shuffle()
-# dealer = Player('Dealer')
-# all_players = []
-
+from .models import Player, GameTable
 
 def index(request):
     return render(request, 'cards/index.html')
@@ -19,4 +10,5 @@ def room(request, room_name):
         pass
     else:  
         return HttpResponseNotFound("You are not authenticated")
+       
     return render(request, 'cards/game.html', {"room_name": room_name})

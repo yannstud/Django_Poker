@@ -1,57 +1,42 @@
 {% extends "cards/header.html" %}
 {% block content %}
-
 	{% csrf_token %}
-	<div id="dealer_scope">
-		<h1>Room: </h1><h1 class="roomName"></h1>	
-		<div>
-			<h1 class="dealerName"></h1> 
-			<button class="dealercard1"></button>
-			<button class="dealercard2"></button>
-			<button class="dealercard3"></button>
-			<button class="dealercard4"></button>
-			<button class="dealercard5"></button>
+	{% load crispy_forms_field %}
+	<div id="main" >
+		<div class="players">
+			<div class="player player-1" id="player1" >
+				<div class="avatar timer" style="background: blue;">
+					Dealer
+				</div>
+			</div>
+			{% for i in '23456'|make_list %}
+				<div class="player player-{{i}}" id="player{{i}}">
+					<div class="avatar" style="background: red;">
+						<h3 id="name-player-{{i}}"></h3>
+						<button id="player-{{i}}-card1"></button>
+						<button id="player-{{i}}-card2"></button>
+						<h3 id="player-{{i}}-chips"></h3>
+						<button  id="player-{{i}}-check" hidden="true">Check</button>
+						<button  id="player-{{i}}-raise" hidden="true">Raise</button>
+					</div>
+				</div>
+			{% endfor %}
 		</div>
-	</div>
-	<div id="scope">
-		<div class="player">
-			<h1 class="player_name"></h1>
-			<button class="card1"></button>
-			<button class="card2"></button>
-			<button class="user_enter" id="user_enter1">Enter Table</button>
-		</div>
-		<div class="player">
-			<h1 class="player_name"></h1>
-			<button class="card1"></button>
-			<button class="card2"></button>
-			<button class="user_enter" id="user_enter2">Enter Table</button>
-		</div>
-		<div class="player">
-			<h1 class="player_name"></h1>
-			<button class="card1"></button>
-			<button class="card2"></button>
-			<button class="user_enter" id="user_enter3">Enter Table</button>
-		</div>
-		<div class="player">
-			<h1 class="player_name"></h1>
-			<button class="card1"></button>
-			<button class="card2"></button>
-			<button class="user_enter" id="user_enter4">Enter Table</button>
-		</div>
-		<div class="player">
-			<h1 class="player_name"></h1>
-			<button class="card1"></button>
-			<button class="card2"></button>
-			<button class="user_enter" id="user_enter5">Enter Table</button>
-		</div>
-	</div>
-	
-
-	<div>
-		<input id="addme" type="button" value="Send">
-	</div>
+		<div class='square-box'>
+			<div class='square-content'> 
+				<button id="dealercard1" hidden="true"></button>
+				<button id="dealercard2" hidden="true"></button>
+				<button id="dealercard3" hidden="true"></button>
+				<button id="dealercard4" hidden="true"></button>
+				<button id="dealercard5" hidden="true"></button>
+			</div>
+		</div> 
+	</div>   
+	<button id="start_game">Start game</button>
+	<button id="seat_me">Add me to the table</button>
+	<button id="disconnect">Disconnect</button>
 	{{ room_name|json_script:"room-name" }}
-
+	
 	{% include 'cards/chat.html' %}
 	<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8=" crossorigin="anonymous"></script>
 	<script>
@@ -63,32 +48,61 @@
 			+ roomName
 			+ '/'
 		);
-
+		
 		gameSocket.onmessage = function(e) {
 			const data = JSON.parse(e.data);
-			if ("message" in data) {
-				document.querySelector('#chat-log').value += (data.user + ' say : '  + data.message + '\n');
-			} else if ("player_cards" in data && "player" in data && "player_button_id" in data) {
-				$('#'+data.player_button_id).prev().prev().prev().text(data.player)
-				$('#'+data.player_button_id).prev().prev().text(data.player_cards[0][0] + ' de ' + data.player_cards[0][1])
-				$('#'+data.player_button_id).prev().text(data.player_cards[1][0] + ' de ' + data.player_cards[1][1])
-				$('#'+data.player_button_id).hide()
+			console.log(data)
+			if ("disconnect" in data) {
+				$('#name-player-'+data.player_id_seat).html('')
+				$('#player-'+data.player_id_seat+'-card1').text('')
+				$('#player-'+data.player_id_seat+'-card2').text('')
+				$('#player-'+data.player_id_seat+'-raise').attr('hidden', true)
+				$('#player-'+data.player_id_seat+'-check').attr('hidden', true)
+			} else if ("message" in data) {
+				$('#chat-log').val($('#chat-log').val() + data.user + ' say : '  + data.message + '\n');
+			} else if ("player_cards" in data && "player" in data && "player_id_seat" in data) {
+				$('#name-player-'+data.player_id_seat).html(data.player)
+				if (data.player_cards[0][0] != '' && data.player_cards[1][0] != ''){
+					$('#player-'+data.player_id_seat+'-card1').text(data.player_cards[0][0] + ' de ' + data.player_cards[0][1])
+					$('#player-'+data.player_id_seat+'-card2').text(data.player_cards[1][0] + ' de ' + data.player_cards[1][1])
+					$('#player-'+data.player_id_seat+'-check').removeAttr('hidden')
+					$('#player-'+data.player_id_seat+'-raise').removeAttr('hidden')
+				} else {
+					$('#player-'+data.player_id_seat+'-card1').text('')
+					$('#player-'+data.player_id_seat+'-card2').text('')
+					$('#player-'+data.player_id_seat+'-check').removeAttr('hidden')
+					$('#player-'+data.player_id_seat+'-raise').removeAttr('hidden')
+				} 
+
 			} else if ("table_state" in data) {
+				console.log('on recois le deal en front')
 				if (data.table_state == '') {
-					$( "#dealer_scope" ).find('.dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
-					$( "#dealer_scope" ).find('.dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
-					$( "#dealer_scope" ).find('.dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+					$( ".square-content" ).find('#dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
+					$( ".square-content" ).find('#dealercard1').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
+					$( ".square-content" ).find('#dealercard2').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+					$( ".square-content" ).find('#dealercard3').removeAttr('hidden')
 				} else if (data.table_state == 'flop') {
-					$( "#dealer_scope" ).find('.dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
-					$( "#dealer_scope" ).find('.dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
-					$( "#dealer_scope" ).find('.dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
-					$( "#dealer_scope" ).find('.dealercard4').text(data.dealer_cards[3][0] + ' de ' + data.dealer_cards[3][1])
+					$( ".square-content" ).find('#dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
+					$( ".square-content" ).find('#dealercard1').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
+					$( ".square-content" ).find('#dealercard2').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+					$( ".square-content" ).find('#dealercard3').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard4').text(data.dealer_cards[3][0] + ' de ' + data.dealer_cards[3][1])
+					$( ".square-content" ).find('#dealercard4').removeAttr('hidden')
 				} else if (data.table_state == 'turn') {
-					$( "#dealer_scope" ).find('.dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
-					$( "#dealer_scope" ).find('.dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
-					$( "#dealer_scope" ).find('.dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
-					$( "#dealer_scope" ).find('.dealercard4').text(data.dealer_cards[3][0] + ' de ' + data.dealer_cards[3][1])
-					$( "#dealer_scope" ).find('.dealercard5').text(data.dealer_cards[4][0] + ' de ' + data.dealer_cards[4][1])
+					$( ".square-content" ).find('#dealercard1').text(data.dealer_cards[0][0] + ' de ' + data.dealer_cards[0][1])
+					$( ".square-content" ).find('#dealercard1').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard2').text(data.dealer_cards[1][0] + ' de ' + data.dealer_cards[1][1])
+					$( ".square-content" ).find('#dealercard2').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard3').text(data.dealer_cards[2][0] + ' de ' + data.dealer_cards[2][1])
+					$( ".square-content" ).find('#dealercard3').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard4').text(data.dealer_cards[3][0] + ' de ' + data.dealer_cards[3][1])
+					$( ".square-content" ).find('#dealercard4').removeAttr('hidden')
+					$( ".square-content" ).find('#dealercard5').text(data.dealer_cards[4][0] + ' de ' + data.dealer_cards[4][1])
+					$( ".square-content" ).find('#dealercard5').removeAttr('hidden')
 				} else if (data.table_state == 'river') {
 					for (button of data.buttons_id) {
 						$('#'+button).prev().prev().prev().text(data.player)
@@ -96,21 +110,24 @@
 						$('#'+button).prev().text('')
 						$('#'+button).hide()
 					}
-					$( "#dealer_scope" ).find('.dealercard1').text('')
-					$( "#dealer_scope" ).find('.dealercard2').text('')
-					$( "#dealer_scope" ).find('.dealercard3').text('')
-					$( "#dealer_scope" ).find('.dealercard4').text('')
-					$( "#dealer_scope" ).find('.dealercard5').text('')
+					$( ".square-content" ).find('#dealercard1').text('')
+					$( ".square-content" ).find('#dealercard2').text('')
+					$( ".square-content" ).find('#dealercard3').text('')
+					$( ".square-content" ).find('#dealercard4').text('')
+					$( ".square-content" ).find('#dealercard5').text('')
+					gameSocket.send(JSON.stringify({
+						'start_game': 'start_game'
+					}));
 				}
-			} else if ("button_id" in data) {
-				$('#'+data.button_id).text(data.player)
+			} else if ("id_seat" in data) {
+				$('#name-player-'+data.id_seat).text(data.player)
 			}
 		};
-	
+		
 		gameSocket.onclose = function(e) {
-			console.error('Chat socket closed unexpectedly');
+			console.error(e);
 		};
-	
+		
 		document.querySelector('#chat-message-input').focus();
 		document.querySelector('#chat-message-input').onkeyup = function(e) {
 			if (e.keyCode === 13) {  // enter, return
@@ -123,7 +140,7 @@
 			const userInputDom = document.querySelector('#chat-message-user-name');
 			const message = messageInputDom.value;
 			const user = userInputDom.value;
-	
+			
 			gameSocket.send(JSON.stringify({
 				'message': message,
 				'user': user
@@ -131,38 +148,60 @@
 			messageInputDom.value = '';
 		};
 
-
 		$(document).ready(function(){
 			// Enter user to the table 
-			$( ".user_enter" ).click(function() {
+			$( "#seat_me" ).click(function() {
 				username = $("#current_user").val()
 				button_id = $(this).attr('id')
-				console.log(button_id)
-				console.log(username)
+				txt = $('#name-player-3').text()
+				if ($.trim($("#name-player-2").html())==''){
+					id_seat = 2
+				} else if ($.trim($("#name-player-3").html())==''){
+					id_seat = 3				
+				} else if ($.trim($("#name-player-4").html())==''){
+					id_seat = 4
+				} else if ($.trim($("#name-player-5").html())==''){
+					id_seat = 5
+				} else if ($.trim($("#name-player-6").html())==''){
+					id_seat = 6
+				}
 				gameSocket.send(JSON.stringify({
 					'addme': 'addme',
 					'username': username,
-					'button_id': button_id
+					'id_seat': id_seat
 				}));
 			});
-			var time = 1;
 
-			var interval = setInterval(function() { 
-				if (time <= 40) { 
-					url = '/cards/' + roomName + '/'
-					CSRFtoken = $('input[name=csrfmiddlewaretoken]').val()
-					
-					gameSocket.send(JSON.stringify({
-						'deal': 'deal'
-					}));
-				  time++;
-			   }
-			   else { 
-				  clearInterval(interval);
-			   }
-			}, 5000);
+			$( "#start_game" ).click(function() {
+				gameSocket.send(JSON.stringify({
+					'start_game': 'start_game'
+				}));
+			});
 
+			$( "#disconnect" ).click(function() {
+				username = $("#current_user").val()
+				gameSocket.send(JSON.stringify({
+					'disconnect_user': 'disconnect_user',
+					'username': username
+				}));
+			});
+
+			$('[id$="-check"]').click(function() {
+				username = $(this).prev().prev().prev().prev().html()
+				gameSocket.send(JSON.stringify({
+					'deal': 'deal',
+					'username': username
+				}));
+			});
+
+			$( ".raise" ).click(function() {
+				username = $("#current_user").val()
+				gameSocket.send(JSON.stringify({
+					'raise': 'raise',
+					'username': username
+				}));
+			});
 		});
 
 	</script>
-{% endblock %}
+	{% endblock %}

@@ -1,9 +1,10 @@
 
 {% block chat %}
-<input id="chat-message-user-name" type="text" value="{{ user }}" ><br>
-<textarea id="chat-log" cols="100" rows="10"></textarea><br>
-<input id="chat-message-input" type="text" size="100"><br>
-<input id="chat-message-submit" type="button" value="Send">
-
+<div class="chat">
+    <input id="chat-message-user-name" type="text" value="{{ user }}" ><br>
+    <textarea id="chat-log" cols="100" rows="10"></textarea><br>
+    <input id="chat-message-input" type="text" size="100"><br>
+    <input id="chat-message-submit" type="button" value="Send">
+</div>
 
 {% endblock %}
